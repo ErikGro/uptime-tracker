@@ -1,0 +1,33 @@
+package templates
+
+import "fmt"
+
+type PingResult struct {
+	URL     string
+	OK      bool
+	Status  int
+	Latency string
+	Error   string
+}
+
+templ PingResultFragment(r PingResult) {
+	if r.OK {
+		<article style="border-left: 4px solid var(--pico-color-green-500);">
+			<strong>UP</strong> — { r.URL } returned <code>{ fmt.Sprintf("%d", r.Status) }</code> in <kbd>{ r.Latency }</kbd>
+		</article>
+	} else {
+		<article style="border-left: 4px solid var(--pico-color-red-500);">
+			<strong>DOWN</strong> — { r.URL }
+			if r.Status > 0 {
+				returned <code>{ fmt.Sprintf("%d", r.Status) }</code>
+			}
+			if r.Error != "" {
+				<br/><small>{ r.Error }</small>
+			}
+		</article>
+	}
+}
+
+templ ClockFragment(now string) {
+	{ now }
+}

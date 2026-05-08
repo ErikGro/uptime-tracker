@@ -1,0 +1,20 @@
+# Local config
+.env
+.env.local
+
+# SQLite databases
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+
+# Build artefacts
+/uptime-tracker
+/tmp/
+*.test
+*.out
+
+# Editor / OS
+.DS_Store
+.idea/
+.vscode/
