@@ -18,44 +18,49 @@ The dashboard never lets you change auth credentials — those are infrastructur
 - [x] Vendor `htmx.min.js` (htmx 4.0.0-beta2 — see [`docs/htmx-4-migration.md`](./docs/htmx-4-migration.md)) into `internal/web/static/js/`.
 - [x] Vendor `alpine.min.js` (Alpine 3.15.11) into `internal/web/static/js/`.
 - [x] Fill `.gitignore` (`*.db`, `.env`, `tmp/`, build artefacts).
-- [ ] Replace empty `README.md` with orientation + config reference (basic version done; expand once features land).
-- [ ] Run `go mod tidy` once real imports exist; promote indirect deps to direct.
+- [x] Replace empty `README.md` with orientation + config reference (will keep expanding as features land).
+- [x] Run `go mod tidy`; direct deps now include `gorm.io/gorm`, `gorm.io/driver/sqlite`, `a-h/templ`.
+- [ ] **Deployment caveat:** `mattn/go-sqlite3` requires CGO, which conflicts with CLAUDE.md §6's `CGO_ENABLED=0` target. Swap to `modernc.org/sqlite` (pure Go) at M9, or accept CGO in the build pipeline.
 
 **Done when:** repo contains only files we own or have explicitly vendored, with versions recorded in `README.md`.
 
 ## Milestone 1 — Configuration & settings store
 
-- [ ] `internal/config`: load `.env` with `os.Getenv` + a tiny loader (no `godotenv` dependency).
-- [ ] `settings` table schema: `(key TEXT PRIMARY KEY, value TEXT)`.
-- [ ] Typed accessors per key with defaults:
+- [x] `internal/config`: load `.env` with `os.Getenv` + a tiny loader (no `godotenv` dependency).
+- [x] `settings` table schema: `(key TEXT PRIMARY KEY, value TEXT)`.
+- [x] Typed accessors per key with defaults:
   - `poll_interval_seconds` (default `300`)
   - `request_timeout_seconds` (default `10`)
   - `failure_threshold` (default `3`)
   - `webhook_url` (nullable string)
   - `webhook_enabled` (default `false`)
   - `retention_days` (default `30`)
-- [ ] Seed defaults on first boot.
+- [x] Seed defaults on first boot (idempotent via `ON CONFLICT DO NOTHING`).
+- [x] `.env.example` checked in as a copy-this-and-edit template.
 
-**Done when:** the app reads `.env` for static config and the `settings` table for runtime config, with sane defaults if either is missing.
+**Done when:** the app reads `.env` for static config and the `settings` table for runtime config, with sane defaults if either is missing. ✅
 
 ## Milestone 2 — Persistence layer
 
-- [ ] `internal/store`: GORM models —
-  - `URL { id, label, url, created_at, current_status, consecutive_failures, last_checked_at }`
-  - `Check { id, url_id, checked_at, status_code, latency_ms, ok, error }`
-- [ ] `AutoMigrate` on startup.
-- [ ] CRUD repository functions; no GORM types leak above this package.
+- [x] `internal/store`: GORM models —
+  - `URL { ID, Label, URL, CurrentStatus, ConsecutiveFailures, LastCheckedAt, CreatedAt, UpdatedAt }`
+  - `Check { ID, URLID, CheckedAt, StatusCode, LatencyMs, OK, Error }`
+  - `Setting { Key, Value }`
+- [x] `AutoMigrate` on startup.
+- [x] CRUD repository functions in `urls.go`, `checks.go`, `settings.go`; no GORM types leak above this package.
+- [x] Unit tests in `store_test.go` cover settings, URL CRUD, check append/prune, and status updates.
 
-**Done when:** unit tests against an in-memory SQLite can create/read/update/delete URLs and append checks.
+**Done when:** unit tests against SQLite can create/read/update/delete URLs and append checks. ✅
 
 ## Milestone 3 — HTTP skeleton
 
-- [ ] `internal/web`: HTTP mux with Basic Auth middleware reading creds from `config`.
-- [ ] Embedded static FS via `//go:embed all:static`, served at `/static/` with `http.FileServerFS`.
-- [ ] Base `templ` layout linking `pico.min.css`, `htmx.min.js`, `alpine.min.js` from `/static/`.
-- [ ] `/healthz` returns 200 OK.
+- [x] `internal/web`: HTTP mux with Basic Auth middleware reading creds from `config` (constant-time compare).
+- [x] Embedded static FS via `//go:embed all:static`, served at `/static/` with `http.FileServerFS`.
+- [x] Base `templ` layout linking `pico.min.css`, `htmx.min.js`, `alpine.min.js` from `/static/`.
+- [x] `/healthz` returns 200 OK (unauthenticated, for deploy health checks).
+- [x] `/static/*` unauthenticated; everything else gated by Basic Auth.
 
-**Done when:** `go run .` boots, prompts for Basic Auth, and serves an empty Pico-styled page.
+**Done when:** `go run .` boots, prompts for Basic Auth, and serves a Pico-styled page. ✅
 
 ## Milestone 4 — URL CRUD via HTMX
 
