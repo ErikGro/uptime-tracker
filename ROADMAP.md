@@ -20,7 +20,7 @@ The dashboard never lets you change auth credentials — those are infrastructur
 - [x] Fill `.gitignore` (`*.db`, `.env`, `tmp/`, build artefacts).
 - [x] Replace empty `README.md` with orientation + config reference (will keep expanding as features land).
 - [x] Run `go mod tidy`; direct deps now include `gorm.io/gorm`, `gorm.io/driver/sqlite`, `a-h/templ`.
-- [ ] **Deployment caveat:** `mattn/go-sqlite3` requires CGO, which conflicts with CLAUDE.md §6's `CGO_ENABLED=0` target. Swap to `modernc.org/sqlite` (pure Go) at M9, or accept CGO in the build pipeline.
+- [ ] **SQLite driver swap (deferred to M9):** The current `gorm.io/driver/sqlite` import pulls in `mattn/go-sqlite3`, which requires CGO and breaks the `CGO_ENABLED=0` build target. Replace with `gorm.io/driver/sqlite-pure` backed by `modernc.org/sqlite` (pure Go, mechanically transpiled from upstream SQLite C — same file format, same SQL semantics, no C toolchain). Decision is locked in; the swap itself happens as part of M9 alongside the Makefile.
 
 **Done when:** repo contains only files we own or have explicitly vendored, with versions recorded in `README.md`.
 
@@ -64,14 +64,14 @@ The dashboard never lets you change auth credentials — those are infrastructur
 
 ## Milestone 4 — URL CRUD via HTMX
 
-- [ ] `GET /` → dashboard with URL list (templ).
-- [ ] `POST /urls` → returns the new row fragment.
-- [ ] `GET /urls/{id}/edit` → returns edit form fragment.
-- [ ] `PUT /urls/{id}` → returns updated row fragment.
-- [ ] `DELETE /urls/{id}` → returns empty fragment + `HX-Trigger`.
-- [ ] Server-side validation; surface errors via `hx-target` swap.
+- [x] `GET /` → dashboard with URL list (templ).
+- [x] `POST /urls` → returns the new row fragment.
+- [x] `GET /urls/{id}/edit` → returns edit form fragment.
+- [x] `PUT /urls/{id}` → returns updated row fragment.
+- [x] `DELETE /urls/{id}` → returns empty fragment + `HX-Trigger`.
+- [x] Server-side validation; surface errors via `hx-target` swap.
 
-**Done when:** an operator can add, edit, and remove URLs without a full page reload.
+**Done when:** an operator can add, edit, and remove URLs without a full page reload. ✅
 
 ## Milestone 5 — Scheduler / worker
 
@@ -110,6 +110,7 @@ The dashboard never lets you change auth credentials — those are infrastructur
 
 ## Milestone 9 — Deployment
 
+- [ ] Swap GORM dialector from `gorm.io/driver/sqlite` to `gorm.io/driver/sqlite-pure` (`modernc.org/sqlite`, pure Go); drop the indirect `mattn/go-sqlite3` dependency via `go mod tidy`. Verify `CGO_ENABLED=0 go build` produces a working binary and that `internal/store` tests still pass.
 - [ ] `Makefile` targets: `build` (`CGO_ENABLED=0 go build`), `run`, `tidy`, `templ` (regenerate templates).
 - [ ] Sample `Caddyfile` for HTTPS termination + reverse proxy.
 - [ ] Sample `systemd` unit.

@@ -1,0 +1,138 @@
+package templates
+
+import (
+	"fmt"
+
+	"github.com/ErikGro/uptime-tracker/internal/store"
+)
+
+templ Dashboard(urls []store.URL) {
+	@Layout("Uptime Tracker") {
+		<article>
+			<header><strong>Add URL</strong></header>
+			@URLNewForm("", "", nil)
+		</article>
+		@URLList(urls)
+	}
+}
+
+templ URLList(urls []store.URL) {
+	<div id="url-list">
+		if len(urls) == 0 {
+			<p><em>No URLs yet — add one above.</em></p>
+		} else {
+			<table>
+				<thead>
+					<tr>
+						<th>Label</th>
+						<th>URL</th>
+						<th>Status</th>
+						<th></th>
+					</tr>
+				</thead>
+				<tbody>
+					for _, u := range urls {
+						@URLRow(u)
+					}
+				</tbody>
+			</table>
+		}
+	</div>
+}
+
+templ URLRow(u store.URL) {
+	<tr id={ fmt.Sprintf("url-row-%d", u.ID) }>
+		<td>{ u.Label }</td>
+		<td><a href={ templ.URL(u.URL) } target="_blank" rel="noreferrer">{ u.URL }</a></td>
+		<td>{ string(u.CurrentStatus) }</td>
+		<td>
+			<button
+				type="button"
+				class="secondary"
+				hx-get={ fmt.Sprintf("/urls/%d/edit", u.ID) }
+				hx-target="closest tr"
+				hx-swap="outerHTML"
+			>Edit</button>
+			<button
+				type="button"
+				class="contrast"
+				hx-delete={ fmt.Sprintf("/urls/%d", u.ID) }
+				hx-target="closest tr"
+				hx-swap="outerHTML"
+				hx-confirm="Delete this URL?"
+			>Delete</button>
+		</td>
+	</tr>
+}
+
+templ URLEditRow(u store.URL, label, target string, errs map[string]string) {
+	<tr id={ fmt.Sprintf("url-row-%d", u.ID) }>
+		<td colspan="4">
+			<form
+				hx-put={ fmt.Sprintf("/urls/%d", u.ID) }
+				hx-target="closest tr"
+				hx-swap="outerHTML"
+			>
+				<fieldset role="group">
+					<input type="text" name="label" value={ label } maxlength="100" required placeholder="Label"/>
+					<input type="url" name="url" value={ target } required placeholder="https://example.com"/>
+					<button type="submit">Save</button>
+					<button
+						type="button"
+						class="secondary"
+						hx-get={ fmt.Sprintf("/urls/%d/row", u.ID) }
+						hx-target="closest tr"
+						hx-swap="outerHTML"
+					>Cancel</button>
+				</fieldset>
+				if errs["label"] != "" {
+					<small style="color:var(--pico-color-red-500);">Label: { errs["label"] }</small><br/>
+				}
+				if errs["url"] != "" {
+					<small style="color:var(--pico-color-red-500);">URL: { errs["url"] }</small>
+				}
+			</form>
+		</td>
+	</tr>
+}
+
+templ URLNewForm(label, target string, errs map[string]string) {
+	<form
+		id="new-url-form"
+		hx-post="/urls"
+		hx-target="#url-list"
+		hx-swap="outerHTML"
+	>
+		@urlNewFormBody(label, target, errs)
+	</form>
+}
+
+templ URLNewFormOOB() {
+	<form
+		id="new-url-form"
+		hx-post="/urls"
+		hx-target="#url-list"
+		hx-swap="outerHTML"
+		hx-swap-oob="true"
+	>
+		@urlNewFormBody("", "", nil)
+	</form>
+}
+
+templ urlNewFormBody(label, target string, errs map[string]string) {
+	<label>
+		Label
+		<input type="text" name="label" value={ label } maxlength="100" required/>
+		if errs["label"] != "" {
+			<small style="color:var(--pico-color-red-500);">{ errs["label"] }</small>
+		}
+	</label>
+	<label>
+		URL
+		<input type="url" name="url" value={ target } required placeholder="https://example.com"/>
+		if errs["url"] != "" {
+			<small style="color:var(--pico-color-red-500);">{ errs["url"] }</small>
+		}
+	</label>
+	<button type="submit">Add</button>
+}

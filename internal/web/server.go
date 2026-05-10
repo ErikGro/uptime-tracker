@@ -24,7 +24,12 @@ func NewServer(cfg *config.Config, st *store.Store) http.Handler {
 	mux.HandleFunc("GET /healthz", s.handleHealthz)
 
 	// Authenticated routes.
-	mux.HandleFunc("GET /{$}", auth(s.handleRoot))
+	mux.HandleFunc("GET /{$}", auth(s.handleDashboard))
+	mux.HandleFunc("POST /urls", auth(s.handleURLCreate))
+	mux.HandleFunc("GET /urls/{id}/edit", auth(s.handleURLEditForm))
+	mux.HandleFunc("GET /urls/{id}/row", auth(s.handleURLRow))
+	mux.HandleFunc("PUT /urls/{id}", auth(s.handleURLUpdate))
+	mux.HandleFunc("DELETE /urls/{id}", auth(s.handleURLDelete))
 	mux.HandleFunc("GET /poc", auth(s.handlePOC))
 	mux.HandleFunc("POST /poc/ping", auth(s.handlePOCPing))
 	mux.HandleFunc("GET /poc/time", auth(s.handlePOCTime))
@@ -35,10 +40,6 @@ func NewServer(cfg *config.Config, st *store.Store) http.Handler {
 func (s *Server) handleHealthz(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	_, _ = w.Write([]byte("ok"))
-}
-
-func (s *Server) handleRoot(w http.ResponseWriter, r *http.Request) {
-	http.Redirect(w, r, "/poc", http.StatusFound)
 }
 
 func (s *Server) handlePOC(w http.ResponseWriter, r *http.Request) {
